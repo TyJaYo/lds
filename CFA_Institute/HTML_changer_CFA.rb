@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'nokogiri'
-require 'pry'
 
 #CONFIG
 target_dir = '/Users/tyleryoung/Downloads/CFAFP2020L3/L3html/'
@@ -37,8 +36,7 @@ def remove_empty_paras(file)
 end
 
 def minus_signify(file)
-  # file = file.sub(/(\p{Zs})–/,'\1&minus;') false positives
-  file = file.gsub(/(<td[^>]*?>)(–|&#8211;|&#x2013;|&ndash;)/,'\1&minus;') 
+  file = file.gsub(/(\p{Zs}|<td[^>]*?>)(–|&#8211;|&#x2013;|&ndash;)([\s\d%][^A-Z])/,'\1&minus;\3')
   return file
 end
 
