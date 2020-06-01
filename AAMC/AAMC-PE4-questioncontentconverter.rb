@@ -44,11 +44,16 @@ def sanitize(html) # changes HTML from amp-encoded and cleans up a little
 	html = html.gsub('</TR>','</tr>')
 	html = html.gsub('<TD>','<td>')
 	html = html.gsub('</TD>','</td>')
-	html = html.gsub('<OL>','<ol>')
+	html = html.gsub('<OL','<ol')
+	html = html.gsub('&nbsp;',' ')
 	html = html.gsub('</OL>','</ol>')
 	html = html.gsub('<LI>','<li>')
 	html = html.gsub('</LI>','</li>')
 	html = html.gsub('TYPE=I','class="upper-roman"')
+	html = html.gsub('type="I"','class="upper-roman"')
+	html = html.gsub('type=I','class="upper-roman"')
+	html = html.gsub("TYPE='I'",'class="upper-roman"')
+	html = html.gsub("Type='I'",'class="upper-roman"')
 	html = html.gsub('<I>','<i>')
 	html = html.gsub('</I>','</i>')
 	html = html.gsub('<p></p>','')
@@ -110,7 +115,7 @@ Dir["**/*.xml"].each do |f| # Runs on each xml file in current folder and its su
 		file_error_summary << "No discipline found for #{f}"
 	end
 	
-	CSV.open("#{f.chomp(".xml")}.csv", 'w') do |csv| # new CSV with same name as current file
+	CSV.open("#{f.chomp(".xml")}_questions.csv", 'w') do |csv| # new CSV with same name as current file
 		csv << HEADER_MAPPINGS.values # put question import headers on first row of CSV
 		@doc.xpath(ROOT_XPATH).each do |section| # run on each section found in Items in XML
 			unless section.xpath('@name') # report if section not present
@@ -141,12 +146,11 @@ Dir["**/*.xml"].each do |f| # Runs on each xml file in current folder and its su
 					answers = (1..choices.length).map { |a| item.xpath("Content/Option[@Seq=\"#{a}\"]").children.to_html }.compact.reject { |e| e.to_s.empty? } # make an array of answer scores to check
 					choices_count = choices.length.to_s # set value for choices_count as a string to use in CSV based on how many choices were given in XML
 				end
-
-				choices_html = choices.map { |c| "<li>#{c}</li>" } # make a list item out of each choice
+				choices_html = choices.map.each_with_index { |c,t| "<li><div class='multi-choice' data-choice='#{LETTERS[t]}'>#{LETTERS[t]}.</div><div class='choice-content'>#{c}</div></li>" } # make a list item out of each choice
 				### end of question and answer HTML manipulation
 				
 				### start CSV population
-				question_html			||= "#{question}<ol>#{choices_html.join}</ol>" # create full question HTML out of stem and available choices 
+				question_html			||= "#{question}<ul class='question-choices-multi'>#{choices_html.join}</ul>" # create full question HTML out of stem and available choices 
 				question_category 		= item.xpath('CustomProperties/BankDescription/Value').first&.children&.to_html # use studytopic from XML item if given, otherwise nil and will get overwritten below
 				question_type			||= "SMC"
 				choices_count			||= "13" #placeholder in case not provided
@@ -156,15 +160,15 @@ Dir["**/*.xml"].each do |f| # Runs on each xml file in current folder and its su
 				item_image_urls = extract_images(question_html) # grab image URIs before processing HTML
 				file_image_urls += item_image_urls # add image urls from this item to an array for all this file's images
 
- 				correct_answer = LETTERS[item.xpath('Scoring/Keys/Key[@Score="1"]').children.to_s.to_i]
+ 				correct_answer = LETTERS[item.xpath('Scoring/Keys/Key[@Score="1"]').children.to_s.to_i - 1]
 
 				clean_question_html = sanitize(question_html)
 
-				answer_rat = "<p><strong>The solution is #{correct_answer}.</strong></p><p>#{item.xpath('CustomProperties/WordDocKeyText/Value'}</p>")
+				answer_rat = "<p><strong>The solution is #{correct_answer}.</strong></p><p>#{item.xpath('CustomProperties/WordDocKeyText/Value')&.children}</p>"
 
 				csv << [ # makes a new row corresponding to current XML item
 					clean_question_html, # cleans up HTML to populate question_content_file column value
-					'hi',
+					answer_rat,
 					exam_name, # exam_name
 					'', # exam_section_name
 					question_category, # question_category_name
