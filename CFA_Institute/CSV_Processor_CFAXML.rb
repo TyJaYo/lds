@@ -3,10 +3,10 @@ require 'Pathname'
 require 'nokogiri'
 require 'csv'
 
-INPUT_DIR = '/Users/tyleryoung/Downloads/CFAFP2020L3/L3XML'
+INPUT_DIR = '/Users/tyleryoung/Downloads/2021_CIPM_NewReadings/XML/CIPM L2'
 
 class CfaXmlProcessor
-  OUTPUT_DIR  = '/Users/tyleryoung/Downloads/CFAFP2020L3'
+  OUTPUT_DIR  = '/Users/tyleryoung/Downloads/2021_CIPM_NewReadings'
   TIMESTAMP   = Time.new.strftime('%d_%k%M')
   OUTPUT_FILE = "#{OUTPUT_DIR}/lessons#{TIMESTAMP}.csv"
   HEADERS     = [
@@ -36,26 +36,31 @@ class CfaXmlProcessor
 
       # extract book numbers and book types from xml file
 
-      outer_type   = doc.at_xpath('book/body/book-part/@book-part-type').value
-      outer_number = doc.at_xpath('book/body/book-part/@book-part-number').value
-      inner_type   = doc.at_xpath('book/body/book-part/body/book-part/@book-part-type').value
-      inner_number = doc.at_xpath('book/body/book-part/body/book-part/@book-part-number')&.value
-      inner_number ||= 0
-      group_title  = doc.at_xpath('book/body/book-part/body/book-part/book-part-meta/title-group/title').content
-
-      if inner_type == 'probs'
-        sections   = doc.xpath('book/body/book-part/body/book-part/body/back/sec')
-      else
-        sections   = doc.xpath('book/body/book-part/body/book-part/body/sec')
+      outer_type    = doc.at_xpath('book/body/book-part/@book-part-type').value
+      outer_number  = doc.at_xpath('book/body/book-part/@book-part-number').value
+      inner_type    = doc.at_xpath('book/body/book-part/body/book-part/@book-part-type').value
+      inner_number  = doc.at_xpath('book/body/book-part/body/book-part/@book-part-number')&.value
+      inner_number  ||= 0
+      group_title   = doc.at_xpath('book/body/book-part/body/book-part/book-part-meta/title-group/title').content
+      sections      = doc.xpath('book/body/book-part/body/book-part/body/sec')
+      back_sections = doc.xpath('book/body/book-part/body/book-part/body/back/sec')
+      ref_sections  = doc.xpath('book/body/book-part/body/book-part/body/back/ref-list')
+      
+      if back_sections
+        sections += back_sections
       end
 
-    file_titles  = []
-    file_names   = []
+      if ref_sections
+        sections += ref_sections
+      end
 
-    sections.each do |sec|
-      file_titles << sec.at_xpath('./title').content.chomp('11 This section based on Chapter 6 in Essays on Manager Selection, by Scott D. Stewart, PhD, CFA, Research Foundation of CFA Institute. © 2013 CFA Institute. All rights reserved. ')
-      file_names  << "#{File.basename(xml_file, ".*")}_#{sec.at_xpath('@id')}.html"
-    end
+      file_titles  = []
+      file_names   = []
+
+      sections.each do |sec|
+        file_titles << sec.at_xpath('./title').content.chomp('11 This section based on Chapter 6 in Essays on Manager Selection, by Scott D. Stewart, PhD, CFA, Research Foundation of CFA Institute. © 2013 CFA Institute. All rights reserved. ')
+        file_names  << "#{File.basename(xml_file, ".*")}_#{sec.at_xpath('@id')}.html".gsub(/_CFA\d{4}-R-ref/,'-ref')
+      end
 
       book_part_data = {
         outer_number: outer_number.to_i,
@@ -83,6 +88,7 @@ class CfaXmlProcessor
     ss_count.times do |i|
       ssn = i + first_ss_n
       nth_study_session_files = ss_files.select { |h| h[:outer_number] == ssn }
+      next if nth_study_session_files.empty?
 
       #Study Session Intro
       ss_intro = nth_study_session_files.select { |h| h[:inner_type] == 'ss_intro' }.first
@@ -118,6 +124,7 @@ class CfaXmlProcessor
     #All Lessons
     @all_lessons.each do |lesson|
       # Study Session / Intro
+      next if lesson == nil
       if lesson[:inner_number] == 0 # make Study Session category and first subcat (Introduction)
         @ss_num = lesson[:outer_number] # set counter to current study session
         ss_code = "SS#{@ss_num}"

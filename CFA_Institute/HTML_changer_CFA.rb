@@ -2,7 +2,7 @@
 require 'nokogiri'
 
 #CONFIG
-target_dir = '/Users/tyleryoung/Downloads/CFAFP2020L3/L3html/'
+target_dir = '/Users/tyleryoung/Downloads/2021_CIPM_NewReadings/HTML'
 htmls      = Dir.glob ("#{target_dir}**/*-R*.html")
 contribs   = Dir.glob ("#{target_dir}**/*-R*contrib-groups.html")
 
@@ -22,11 +22,31 @@ def los_proc(html)
   return doc.to_html
 end
 
+def add_ref_header(html)
+  doc = Nokogiri::HTML.fragment(html)
+  ref_list = doc.at_css('ol[@id*="-ref"]')
+  return doc.to_html if ref_list == nil
+  return doc.to_html if doc.at_css('h2')&.content&.include?('Reference')
+  los_items = ref_list.css('li')
+  if los_items.count > 1
+    ref_list.add_previous_sibling('<h2>References</h2>')
+  else
+    ref_list.add_previous_sibling('<h2>Reference</h2>')
+  end
+  return doc.to_html
+end
+
 def pound_pdf_ref(file)
   doc = Nokogiri::HTML.fragment(file)
   doc.css('a[href$=".pdf"]').each do |link|
     link.attributes["href"].value += "#"
   end
+  return doc.to_html
+end
+
+def remove_empty_hrefs(file)
+  doc = Nokogiri::HTML.fragment(file)
+  doc.search('a[href=""]').each(&:remove)
   return doc.to_html
 end
 
@@ -75,6 +95,8 @@ def proc_htmls(htmls)
     str_file  = minus_signify(str_file)
     proc_file = los_proc(str_file)
     proc_file = pound_pdf_ref(proc_file)
+    proc_file = remove_empty_hrefs(proc_file)
+    proc_file = add_ref_header(proc_file)
     proc_file = insert_contribs(proc_file,file_name) if file_name.include?('-R-s01.html')
     File.write(file,proc_file)
   end

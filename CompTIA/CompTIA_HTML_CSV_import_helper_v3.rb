@@ -17,7 +17,7 @@ csvs.each do |csv| # for each CSV file...
       row_name = row[1].strip.gsub(/.*?: /,'') # store the value of that row's "name" field, minus text before colon (and space after colon)
 
       if row[3] == nil # but then if the value for reading_html_file isn't there for that row
-        row_name_for_regex = row_name.gsub('/','\/')
+        row_name_for_regex = row_name.gsub('/','\/').gsub(/[\u0080-\uffff]/, '')
         # if row_name == 'Proprietary/Closed-source Intelligence Sources'
           # binding.pry
         # end
@@ -25,17 +25,16 @@ csvs.each do |csv| # for each CSV file...
           if File.read(file).match(Regexp.new("> *?#{row_name_for_regex} *?<")) # ...and if it includes the row name as the title
             row[3] ||= File.basename(file)
           end
-          if @row_number == 270 && File.basename(file) == '32624591-dd7a-4f70-91b3-0d574aca24df.html'
-            binding.pry
-          end
+          # if @row_number == 270 && File.basename(file) == '32624591-dd7a-4f70-91b3-0d574aca24df.html'
+          #   binding.pry
+          # end
           # if File.basename(file) == '32624591-dd7a-4f70-91b3-0d574aca24df.html'
           #   binding.pry
           # end
           # puts row[1]
           # break if row[3] != nil
         end
-        row[3] ||= "#{row_name}fff"  # reading_html_file
-        row[3] ||= 'noot_found'  # reading_html_file
+        row[3] ||= 'not_found'  # reading_html_file
       end
       csv_out << row
       # if og_csv_table["reading_html_file"][r] == nil # but then if the value for reading_html_file STILL isn't there for that row
