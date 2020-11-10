@@ -86,7 +86,7 @@ class CfaQbHtmlProcessor
       container.at_css('h3').content = 'Solution'
       container.at_css('h3').name = 'h4'
       
-      if container.at_css('img') && images_ingested == false
+      if container.at_css('img') && @images_ingested == false
         imgs = container.css('img')
         imgs.each do |i|
           i['data-external'] = "true"
@@ -102,7 +102,11 @@ class CfaQbHtmlProcessor
 
       container.at_css('ul').remove
       
-      item.at_css('p').add_class('cfa-stem')
+      if item.at_xpath('./p') 
+        item.at_xpath('./p').add_class('cfa-stem')
+      else
+        item.at_css('div.cfa-p').add_class('cfa-stem')
+      end
       
       question_content_file = clean_children_to_html(item)
 
