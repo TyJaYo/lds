@@ -2,8 +2,8 @@
 require 'nokogiri'
 
 #CONFIG
-target_dir = '/Users/tyleryoung/Downloads/2021_CIPM_NewReadings/HTML'
-htmls      = Dir.glob ("#{target_dir}**/*-R*.html")
+target_dir = '/Users/tyleryoung/Downloads/CFA Level I (2022) 10211/CFA-FP-2022-LI-HTML'
+htmls      = Dir.glob ("#{target_dir}**/*-P*.html")
 contribs   = Dir.glob ("#{target_dir}**/*-R*contrib-groups.html")
 
 #HELPER METHODS
@@ -40,6 +40,14 @@ def pound_pdf_ref(file)
   doc = Nokogiri::HTML.fragment(file)
   doc.css('a[href$=".pdf"]').each do |link|
     link.attributes["href"].value += "#"
+  end
+  return doc.to_html
+end
+
+def externalize_imgs(file)
+  doc = Nokogiri::HTML.fragment(file)
+  doc.css('img').each do |img|
+    img['data-external'] = 'false'
   end
   return doc.to_html
 end
@@ -95,6 +103,7 @@ def proc_htmls(htmls)
     str_file  = minus_signify(str_file)
     proc_file = los_proc(str_file)
     proc_file = pound_pdf_ref(proc_file)
+    proc_file = externalize_imgs(proc_file)
     proc_file = remove_empty_hrefs(proc_file)
     proc_file = add_ref_header(proc_file)
     proc_file = insert_contribs(proc_file,file_name) if file_name.include?('-R-s01.html')
