@@ -3,10 +3,10 @@ require 'Pathname'
 require 'nokogiri'
 require 'csv'
 
-INPUT_DIR = '/Users/tyleryoung/Downloads/2021_CIPM_NewReadings/XML/CIPM L2'
+INPUT_DIR = '/Users/tyleryoung/Downloads/CFA Level II (2022)/11451_xml'
 
 class CfaXmlProcessor
-  OUTPUT_DIR  = '/Users/tyleryoung/Downloads/2021_CIPM_NewReadings'
+  OUTPUT_DIR  = '/Users/tyleryoung/Downloads/CFA Level II (2022)'
   TIMESTAMP   = Time.new.strftime('%d_%k%M')
   OUTPUT_FILE = "#{OUTPUT_DIR}/lessons#{TIMESTAMP}.csv"
   HEADERS     = [
@@ -38,10 +38,10 @@ class CfaXmlProcessor
 
       outer_type    = doc.at_xpath('book/body/book-part/@book-part-type').value
       outer_number  = doc.at_xpath('book/body/book-part/@book-part-number').value
-      inner_type    = doc.at_xpath('book/body/book-part/body/book-part/@book-part-type').value
+      inner_type    = doc.at_xpath('book/body/book-part/body/book-part/@book-part-type')&.value
       inner_number  = doc.at_xpath('book/body/book-part/body/book-part/@book-part-number')&.value
       inner_number  ||= 0
-      group_title   = doc.at_xpath('book/body/book-part/body/book-part/book-part-meta/title-group/title').content
+      group_title   = doc.at_xpath('book/body/book-part/body/book-part/book-part-meta/title-group/title')&.content
       sections      = doc.xpath('book/body/book-part/body/book-part/body/sec')
       back_sections = doc.xpath('book/body/book-part/body/book-part/body/back/sec')
       ref_sections  = doc.xpath('book/body/book-part/body/book-part/body/back/ref-list')
